@@ -65,6 +65,16 @@ let audioCtx = null;
 let masterGain = null;
 let muted = false;
 const customSfx = {};
+let sfxBus = null;
+
+function getSfxBus() {
+  if (!sfxBus) {
+    sfxBus = new Audio();
+    sfxBus.preload = 'auto';
+    sfxBus.volume = 0.7;
+  }
+  return sfxBus;
+}
 
 function ensureAudio() {
   try {
@@ -120,15 +130,14 @@ function noiseBurst(dur = 0.08, vol = 0.08, freq = 1200) {
 }
 
 function sfx(name) {
+  const pool = SFX_POOLS[name];
+  if (pool && pool.length) {
+    sfxPlay(name, pool[(Math.random() * pool.length) | 0]);
+    return;
+  }
   const custom = customSfx[name];
   if (custom) {
-    try {
-      const c = custom.cloneNode();
-      c.volume = 0.7;
-      const pr = c.play();
-      if (pr && pr.catch) pr.catch(() => {});
-      return;
-    } catch (e) { /* fall through to synth */ }
+    try { playCustomSfxPath(custom.src); return; } catch (e) { /* fall through to synth */ }
   }
   switch (name) {
     case 'punch': noiseBurst(0.06, 0.10, 2200); tone(180, 0.06, 'square', 0.04, 90); break;
@@ -165,75 +174,97 @@ function sfx(name) {
 }
 
 // ============================================================
-//  RANDOMIZED SFX POOLS (CID MEME SOUNDS)
-// Each event picks a random sound from its pool so hits,
-// hurts and engagements never feel repetitive.
+//  SOUND PLAYBACK: per-action one-shot queues on a shared bus
+// Each action keeps its own queue so sounds play one at a time
+// and never start again until the previous one has finished.
 // ============================================================
 const SFX_POOLS = {
   hit: [
-    'assets/sfx/cid.mp3', 'assets/sfx/cid-acp-mc.mp3', 'assets/sfx/chodu-cid-pakad-le.mp3',
-    'assets/sfx/kyu-re-madarchod-cid.mp3', 'assets/sfx/masti-dekho-bc-cid-dubbing.mp3',
-    'assets/sfx/cid-le-mdc.mp3', 'assets/sfx/ek-jhaat-bhar-ka-aadmi.mp3',
-    'assets/sfx/cid-yeh-kya-back-rahe-ho-mcd.mp3', 'assets/sfx/cid-ke-bakchodi.mp3',
-    'assets/sfx/cid-120-watt.mp3', 'assets/sfx/ek-gand-pe-repta-mara-n-sarak-pe-hagta-firega.mp3',
-    'assets/sfx/phir-teri-maiya-chodta-hu-cid.mp3', 'assets/sfx/cid-acp-pradhuman-fasi.mp3',
+    'assets/sfx/hit/cid.mp3', 'assets/sfx/hit/cid-acp-mc.mp3', 'assets/sfx/hit/chodu-cid-pakad-le.mp3',
+    'assets/sfx/hit/kyu-re-madarchod-cid.mp3', 'assets/sfx/hit/masti-dekho-bc-cid-dubbing.mp3',
+    'assets/sfx/hit/cid-le-mdc.mp3', 'assets/sfx/hit/ek-jhaat-bhar-ka-aadmi.mp3',
+    'assets/sfx/hit/cid-yeh-kya-back-rahe-ho-mcd.mp3', 'assets/sfx/hit/cid-ke-bakchodi.mp3',
+    'assets/sfx/hit/cid-120-watt.mp3', 'assets/sfx/hit/ek-gand-pe-repta-mara-n-sarak-pe-hagta-firega.mp3',
+    'assets/sfx/hit/phir-teri-maiya-chodta-hu-cid.mp3', 'assets/sfx/hit/cid-acp-pradhuman-fasi.mp3',
   ],
   hurt: [
-    'assets/sfx/cid.mp3', 'assets/sfx/cid-acp-mc.mp3', 'assets/sfx/masti-dekho-bc-cid-dubbing.mp3',
-    'assets/sfx/cid-le-mdc.mp3', 'assets/sfx/chodu-cid-pakad-le.mp3', 'assets/sfx/kya-cheda-bhosdi.mp3',
-    'assets/sfx/cid-teri-ma-ki-chut.mp3', 'assets/sfx/lund-pakad-ke-tarazu-ki-tarah-cid.mp3',
+    'assets/sfx/hurt/cid.mp3', 'assets/sfx/hurt/cid-acp-mc.mp3', 'assets/sfx/hurt/masti-dekho-bc-cid-dubbing.mp3',
+    'assets/sfx/hurt/cid-le-mdc.mp3', 'assets/sfx/hurt/chodu-cid-pakad-le.mp3', 'assets/sfx/hurt/kya-cheda-bhosdi.mp3',
+    'assets/sfx/hurt/cid-teri-ma-ki-chut.mp3', 'assets/sfx/hurt/lund-pakad-ke-tarazu-ki-tarah-cid.mp3',
   ],
   spawn: [
-    'assets/sfx/cid.mp3', 'assets/sfx/cid-acp-mc.mp3', 'assets/sfx/kyu-re-madarchod-cid.mp3',
-    'assets/sfx/masti-dekho-bc-cid-dubbing.mp3', 'assets/sfx/ek-baar-milja-beta.mp3',
-    'assets/sfx/aree-cid.mp3', 'assets/sfx/cid-gali-ovs.mp3', 'assets/sfx/ek-jhaat-bhar-ka-aadmi.mp3',
-    'assets/sfx/cid-120-watt.mp3',
+    'assets/sfx/spawn/cid.mp3', 'assets/sfx/spawn/cid-acp-mc.mp3', 'assets/sfx/spawn/kyu-re-madarchod-cid.mp3',
+    'assets/sfx/spawn/masti-dekho-bc-cid-dubbing.mp3', 'assets/sfx/spawn/ek-baar-milja-beta.mp3',
+    'assets/sfx/spawn/aree-cid.mp3', 'assets/sfx/spawn/cid-gali-ovs.mp3', 'assets/sfx/spawn/ek-jhaat-bhar-ka-aadmi.mp3',
+    'assets/sfx/spawn/cid-120-watt.mp3',
   ],
   chase: [
-    'assets/sfx/cid-le-mdc.mp3', 'assets/sfx/masti-dekho-bc-cid-dubbing.mp3', 'assets/sfx/cid.mp3',
-    'assets/sfx/cid-acp-mc.mp3', 'assets/sfx/chodu-cid-pakad-le.mp3', 'assets/sfx/cid-acp-pradhuman-fasi.mp3',
+    'assets/sfx/chase/cid-le-mdc.mp3', 'assets/sfx/chase/masti-dekho-bc-cid-dubbing.mp3', 'assets/sfx/chase/cid.mp3',
+    'assets/sfx/chase/cid-acp-mc.mp3', 'assets/sfx/chase/chodu-cid-pakad-le.mp3', 'assets/sfx/chase/cid-acp-pradhuman-fasi.mp3',
   ],
   boss: [
-    'assets/sfx/cid-le-mdc.mp3', 'assets/sfx/cid.mp3', 'assets/sfx/cid-acp-pradhuman-fasi.mp3',
-    'assets/sfx/cid-acp-mc.mp3', 'assets/sfx/masti-dekho-bc-cid-dubbing.mp3',
-    'assets/sfx/chodu-cid-pakad-le.mp3', 'assets/sfx/cid-song.mp3',
+    'assets/sfx/boss/cid-le-mdc.mp3', 'assets/sfx/boss/cid.mp3', 'assets/sfx/boss/cid-acp-pradhuman-fasi.mp3',
+    'assets/sfx/boss/cid-acp-mc.mp3', 'assets/sfx/boss/masti-dekho-bc-cid-dubbing.mp3',
+    'assets/sfx/boss/chodu-cid-pakad-le.mp3', 'assets/sfx/boss/cid-song.mp3',
   ],
   special: [
-    'assets/sfx/masti-dekho-bc-cid-dubbing.mp3', 'assets/sfx/cid.mp3', 'assets/sfx/cid-le-mdc.mp3',
-    'assets/sfx/chodu-cid-pakad-le.mp3', 'assets/sfx/cid-acp-mc.mp3', 'assets/sfx/cid-acp-pradhuman-fasi.mp3',
+    'assets/sfx/special/masti-dekho-bc-cid-dubbing.mp3', 'assets/sfx/special/cid.mp3', 'assets/sfx/special/cid-le-mdc.mp3',
+    'assets/sfx/special/chodu-cid-pakad-le.mp3', 'assets/sfx/special/cid-acp-mc.mp3', 'assets/sfx/special/cid-acp-pradhuman-fasi.mp3',
   ],
   ko: [
-    'assets/sfx/chodu-cid-pakad-le.mp3', 'assets/sfx/cid-le-mdc.mp3', 'assets/sfx/cid.mp3',
-    'assets/sfx/cid-acp-mc.mp3', 'assets/sfx/masti-dekho-bc-cid-dubbing.mp3',
-    'assets/sfx/cid-acp-pradhuman-fasi.mp3', 'assets/sfx/cid-song.mp3',
+    'assets/sfx/hit/chodu-cid-pakad-le.mp3', 'assets/sfx/boss/cid-le-mdc.mp3', 'assets/sfx/hit/cid.mp3',
+    'assets/sfx/hit/cid-acp-mc.mp3', 'assets/sfx/hit/masti-dekho-bc-cid-dubbing.mp3',
+    'assets/sfx/boss/cid-acp-pradhuman-fasi.mp3', 'assets/sfx/boss/cid-song.mp3',
   ],
   clear: [
-    'assets/sfx/cid-song.mp3', 'assets/sfx/cid.mp3', 'assets/sfx/cid-acp-mc.mp3',
-    'assets/sfx/cid-bc.mp3', 'assets/sfx/ek-gand-pe-repta-mara-n-sarak-pe-hagta-firega.mp3',
+    'assets/sfx/win/cid-song.mp3', 'assets/sfx/hit/cid.mp3', 'assets/sfx/hit/cid-acp-mc.mp3',
+    'assets/sfx/hit/cid-bc.mp3', 'assets/sfx/hit/ek-gand-pe-repta-mara-n-sarak-pe-hagta-firega.mp3',
   ],
-  win: ['assets/sfx/cid-song.mp3'],
+  win: ['assets/sfx/win/cid-song.mp3'],
   lose: [
-    'assets/sfx/cid.mp3', 'assets/sfx/cid-acp-mc.mp3', 'assets/sfx/cid-le-mdc.mp3',
-    'assets/sfx/masti-dekho-bc-cid-dubbing.mp3', 'assets/sfx/chodu-cid-pakad-le.mp3',
+    'assets/sfx/lose/cid.mp3', 'assets/sfx/lose/cid-acp-mc.mp3', 'assets/sfx/lose/cid-le-mdc.mp3',
+    'assets/sfx/lose/masti-dekho-bc-cid-dubbing.mp3', 'assets/sfx/lose/chodu-cid-pakad-le.mp3',
   ],
 };
 
-function playCustomSfxPath(src) {
+const SFX_QUEUES = {};
+
+function sfxPlay(key, src) {
+  const st = SFX_QUEUES[key] || (SFX_QUEUES[key] = { queue: [], playing: false, loop: key === 'win' });
+  const start = () => {
+    st.playing = true;
+    playCustomSfxPath(src, () => {
+      st.playing = false;
+      if (st.loop && st.queue.length === 0) { st.queue.push(src); start(); return; }
+      const next = st.queue.shift();
+      if (next) playCustomSfxPath(next, start);
+    });
+  };
+  if (st.playing) { st.queue.push(src); return; }
+  start();
+}
+
+function sfxStop(key) {
+  const st = SFX_QUEUES[key];
+  if (st) { st.queue.length = 0; st.playing = false; }
+}
+
+function playCustomSfxPath(src, onEnded) {
   try {
-    const a = new Audio();
-    a.preload = 'auto';
-    a.volume = 0.7;
+    const a = getSfxBus();
+    a.pause();
     a.src = src;
+    try { a.currentTime = 0; } catch (e) { /* ignore */ }
     const pr = a.play();
     if (pr && pr.catch) pr.catch(() => {});
+    if (typeof onEnded === 'function') {
+      const h = () => { a.removeEventListener('ended', h); if (onEnded) onEnded(); };
+      a.addEventListener('ended', h);
+    }
   } catch (e) { /* ignore */ }
 }
 
-function sfxRandom(key) {
-  const pool = SFX_POOLS[key];
-  if (!pool || !pool.length) { sfx(key); return; }
-  playCustomSfxPath(pool[(Math.random() * pool.length) | 0]);
-}
+function sfxRandom(key) { sfx(key); }
 
 // ============================================================
 //  CUSTOM ASSETS
