@@ -27,12 +27,17 @@ function drawHead(kind, cx, cy, size, facing, t) {
     ctx.save();
     ctx.translate(cx, cy);
     if (facing < 0) ctx.scale(-1, 1);
-    ctx.drawImage(img, -size / 2, -size / 2, size, size);
+    // preserve aspect ratio (letterbox inside the square face box)
+    const aspect = (img.naturalWidth || 1) / (img.naturalHeight || 1);
+    let dw = size, dh = size;
+    if (aspect > 1) dh = size / aspect;
+    else if (aspect < 1) dw = size * aspect;
+    ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
     ctx.restore();
     return;
   }
 
-  const look = LOOKS[kind] || LOOKS.grunt;
+  const look = LOOKS[kind] || LOOKS[kind && kind.startsWith && kind.startsWith('acp') ? 'acp' : null] || LOOKS.grunt;
   const hw = size * 0.50;
   const hh = size * 0.54;
 
@@ -226,7 +231,7 @@ function drawFaceDetails(kind, cx, cy, size, facing, t, look) {
 //  ACTOR
 // ------------------------------------------------------------
 function drawActor(a, kind, t) {
-  const look = LOOKS[kind] || LOOKS.grunt;
+  const look = LOOKS[kind] || LOOKS[(kind && typeof kind === 'string' && kind.startsWith('acp')) ? 'acp' : null] || LOOKS.grunt;
   const feetY = a.y + a.h;
   const cx = a.x + a.w / 2;
 
@@ -240,7 +245,8 @@ function drawActor(a, kind, t) {
   ctx.restore();
 
   const isBoss = kind === 'boss';
-  const headSize = isBoss ? a.h * 0.62 : (kind === 'acp' ? a.h * 0.48 : a.h * 0.56);
+  const isAcp = kind === 'acp' || (kind && typeof kind === 'string' && kind.startsWith('acp'));
+  const headSize = isBoss ? a.h * 0.62 : (isAcp ? a.h * 0.48 : a.h * 0.56);
   const headCY = a.y + headSize * 0.52;
   const torsoTop = a.y + headSize * 0.92;
   const torsoBottom = feetY - a.h * 0.10;

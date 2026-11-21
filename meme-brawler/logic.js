@@ -161,7 +161,7 @@ function levelClear() {
 
 function gameOver() {
   state = 'gameover';
-  sfx('lose');
+  sfxRandom('gotKilled');
   showOverlay('YOU GOT MEMED', level ? level.name : '', [
     { label: 'Retry', action: () => startLevel(levelIndex) },
     { label: 'Menu', action: showTitle },
@@ -243,7 +243,6 @@ function startPunch() {
   p.didHit = false;
   const near = nearestEnemy();
   if (near) p.facing = sign((near.x + near.w / 2) - (p.x + p.w / 2));
-  sfx(p.attackType === 'kick' ? 'kick' : 'punch');
 }
 
 function playerHitbox() {
@@ -315,7 +314,7 @@ function killEnemy(e) {
   score += e.score || 100;
   burst(e.x + e.w / 2, e.y + e.h * 0.5, '#ffe14f', 20, 320, 4);
   popText(e.x + e.w / 2, e.y, 'KO!', '#ff4fd8', 26);
-  sfxRandom('ko');
+  sfxRandom('kill');
 
   if (e.type === 'boss') {
     bossRef = null;
@@ -400,6 +399,7 @@ function updatePlayer(dt) {
 
   if (input.punchPressed) {
     input.punchPressed = false;
+    sfx(p.chain === 2 ? 'kick' : 'punch');
     if (p.state === 'attack') p.punchQueued = true;
     else if (p.state === 'idle') startPunch();
   }
@@ -637,6 +637,7 @@ function updateBoss(e, dt) {
         burst(e.x + e.w / 2, GROUND - 8, '#ff4fd8', 30, 400, 6);
         sfx('pound');
         if (p.onGround && Math.abs((p.x + p.w / 2) - (e.x + e.w / 2)) < 320) {
+          sfxRandom('bossHit');
           hurtPlayer(16, sign((p.x + p.w / 2) - (e.x + e.w / 2)));
         }
       }
@@ -656,6 +657,7 @@ function updateBoss(e, dt) {
       e.stateT += dt;
       if (!e.didHit && overlaps(player, e)) {
         e.didHit = true;
+        sfxRandom('bossHit');
         hurtPlayer(18, e.facing);
       }
       if (e.stateT >= 0.6 || e.x < cam.x + 20 || e.x + e.w > cam.x + viewW - 20) {
