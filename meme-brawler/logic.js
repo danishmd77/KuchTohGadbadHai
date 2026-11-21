@@ -270,7 +270,6 @@ function doPlayerHit() {
   if (hitAny) {
     hitstop = 0.055;
     shake = Math.max(shake, 6);
-    sfxRandom('hit');
     popText(
       player.x + player.w / 2 + player.facing * 40,
       player.y + 40,

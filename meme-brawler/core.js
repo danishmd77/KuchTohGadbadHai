@@ -65,16 +65,7 @@ let audioCtx = null;
 let masterGain = null;
 let muted = false;
 const customSfx = {};
-let sfxBus = null;
-
-function getSfxBus() {
-  if (!sfxBus) {
-    sfxBus = new Audio();
-    sfxBus.preload = 'auto';
-    sfxBus.volume = 0.7;
-  }
-  return sfxBus;
-}
+// getSfxBus defined in sound playback section below
 
 function ensureAudio() {
   try {
@@ -132,7 +123,10 @@ function noiseBurst(dur = 0.08, vol = 0.08, freq = 1200) {
 function sfx(name) {
   const pool = SFX_POOLS[name];
   if (pool && pool.length) {
-    sfxPlay(name, pool[(Math.random() * pool.length) | 0]);
+    if (SFX_INDEX[name] === undefined) SFX_INDEX[name] = 0;
+    const src = pool[SFX_INDEX[name] % pool.length];
+    SFX_INDEX[name] = (SFX_INDEX[name] + 1) % pool.length;
+    sfxPlay(name, src);
     return;
   }
   const custom = customSfx[name];
@@ -174,10 +168,8 @@ function sfx(name) {
 }
 
 // ============================================================
-//  SOUND PLAYBACK: per-action one-shot queues
-// Each action keeps its own Audio element + queue, so sounds
-// play one at a time within an action but different actions
-// can overlap (no more shared-bus bottleneck).
+//  SOUND PLAYBACK: single shared bus, one sound at a time
+// All mp3 sounds queue on one bus so they never overlap.
 // ============================================================
 const SFX_POOLS = {
   punch: [
@@ -210,52 +202,79 @@ const SFX_POOLS = {
   gotKilled: ['assets/sfx/got-killed/15_ek-jhaat-bhar-ka-aadmi.mp3'],
 };
 
-const SFX_QUEUES = {};
-
-function getSfxAudio(key) {
-  let st = SFX_QUEUES[key];
-  if (!st) {
-    const a = new Audio();
-    a.preload = 'auto';
-    a.volume = 0.7;
-    st = SFX_QUEUES[key] = { audio: a, queue: [], playing: false, loop: key === 'win' };
+const SFX_INDEX = {};
+let sfxBus = null;
+function getSfxBus() {
+  if (!sfxBus) {
+    sfxBus = new Audio();
+    sfxBus.preload = 'auto';
+    sfxBus.volume = 0.7;
   }
-  return st;
+  return sfxBus;
 }
 
-function playOnAudio(st, src, onEnded) {
-  const a = st.audio;
+const SFX_QUEUE = [];
+let sfxPlaying = false;
+
+function playBusSrc(src) {
+  const a = getSfxBus();
   try { a.pause(); } catch (e) { /* ignore */ }
   a.src = src;
   try { a.currentTime = 0; } catch (e) { /* ignore */ }
+  let finished = false;
+  const fallback = () => {
+    if (finished) return;
+    finished = true;
+    sfxPlaying = false;
+    drainQueue();
+  };
+  // primary: ended event
+  const onEnded = () => {
+    if (finished) return;
+    finished = true;
+    if (fallbackTimer) clearTimeout(fallbackTimer);
+    sfxPlaying = false;
+    drainQueue();
+  };
+  // remove any prior ended listeners by using a fresh approach: store handler
+  a.onended = onEnded;
   const pr = a.play();
   if (pr && pr.catch) pr.catch(() => {});
-  if (typeof onEnded === 'function') {
-    const h = () => { a.removeEventListener('ended', h); onEnded(); };
-    // remove any prior ended listeners to avoid duplicates
-    a.removeEventListener('ended', h);
-    a.addEventListener('ended', h);
+  // fallback timer based on duration (set now or on metadata)
+  let fallbackTimer = null;
+  const setTimer = (ms) => {
+    if (fallbackTimer) clearTimeout(fallbackTimer);
+    fallbackTimer = setTimeout(fallback, ms);
+  };
+  if (a.duration && isFinite(a.duration)) {
+    setTimer(a.duration * 1000 + 500);
+  } else {
+    setTimer(3000);
+    a.addEventListener('loadedmetadata', () => {
+      if (!finished && a.duration && isFinite(a.duration)) setTimer(a.duration * 1000 + 500);
+    }, { once: true });
   }
 }
 
-function sfxPlay(key, src) {
-  const st = getSfxAudio(key);
-  const start = () => {
-    st.playing = true;
-    playOnAudio(st, src, () => {
-      st.playing = false;
-      if (st.loop && st.queue.length === 0) { st.queue.push(src); start(); return; }
-      const next = st.queue.shift();
-      if (next) { src = next; start(); }
-    });
-  };
-  if (st.playing) { st.queue.push(src); return; }
-  start();
+// (ended handling is per-call via a.onended + fallback timer above)
+
+function drainQueue() {
+  if (sfxPlaying) return;
+  if (SFX_QUEUE.length === 0) return;
+  sfxPlaying = true;
+  const src = SFX_QUEUE.shift();
+  playBusSrc(src);
 }
 
-function sfxStop(key) {
-  const st = SFX_QUEUES[key];
-  if (st) { st.queue.length = 0; st.playing = false; try { st.audio.pause(); } catch (e) {} }
+function sfxPlay(key, src) {
+  SFX_QUEUE.push(src);
+  drainQueue();
+}
+
+function sfxStop() {
+  SFX_QUEUE.length = 0;
+  sfxPlaying = false;
+  try { getSfxBus().pause(); } catch (e) { /* ignore */ }
 }
 
 function sfxRandom(key) { sfx(key); }
