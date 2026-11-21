@@ -165,6 +165,77 @@ function sfx(name) {
 }
 
 // ============================================================
+//  RANDOMIZED SFX POOLS (CID MEME SOUNDS)
+// Each event picks a random sound from its pool so hits,
+// hurts and engagements never feel repetitive.
+// ============================================================
+const SFX_POOLS = {
+  hit: [
+    'assets/sfx/cid.mp3', 'assets/sfx/cid-acp-mc.mp3', 'assets/sfx/chodu-cid-pakad-le.mp3',
+    'assets/sfx/kyu-re-madarchod-cid.mp3', 'assets/sfx/masti-dekho-bc-cid-dubbing.mp3',
+    'assets/sfx/cid-le-mdc.mp3', 'assets/sfx/ek-jhaat-bhar-ka-aadmi.mp3',
+    'assets/sfx/cid-yeh-kya-back-rahe-ho-mcd.mp3', 'assets/sfx/cid-ke-bakchodi.mp3',
+    'assets/sfx/cid-120-watt.mp3', 'assets/sfx/ek-gand-pe-repta-mara-n-sarak-pe-hagta-firega.mp3',
+    'assets/sfx/phir-teri-maiya-chodta-hu-cid.mp3', 'assets/sfx/cid-acp-pradhuman-fasi.mp3',
+  ],
+  hurt: [
+    'assets/sfx/cid.mp3', 'assets/sfx/cid-acp-mc.mp3', 'assets/sfx/masti-dekho-bc-cid-dubbing.mp3',
+    'assets/sfx/cid-le-mdc.mp3', 'assets/sfx/chodu-cid-pakad-le.mp3', 'assets/sfx/kya-cheda-bhosdi.mp3',
+    'assets/sfx/cid-teri-ma-ki-chut.mp3', 'assets/sfx/lund-pakad-ke-tarazu-ki-tarah-cid.mp3',
+  ],
+  spawn: [
+    'assets/sfx/cid.mp3', 'assets/sfx/cid-acp-mc.mp3', 'assets/sfx/kyu-re-madarchod-cid.mp3',
+    'assets/sfx/masti-dekho-bc-cid-dubbing.mp3', 'assets/sfx/ek-baar-milja-beta.mp3',
+    'assets/sfx/aree-cid.mp3', 'assets/sfx/cid-gali-ovs.mp3', 'assets/sfx/ek-jhaat-bhar-ka-aadmi.mp3',
+    'assets/sfx/cid-120-watt.mp3',
+  ],
+  chase: [
+    'assets/sfx/cid-le-mdc.mp3', 'assets/sfx/masti-dekho-bc-cid-dubbing.mp3', 'assets/sfx/cid.mp3',
+    'assets/sfx/cid-acp-mc.mp3', 'assets/sfx/chodu-cid-pakad-le.mp3', 'assets/sfx/cid-acp-pradhuman-fasi.mp3',
+  ],
+  boss: [
+    'assets/sfx/cid-le-mdc.mp3', 'assets/sfx/cid.mp3', 'assets/sfx/cid-acp-pradhuman-fasi.mp3',
+    'assets/sfx/cid-acp-mc.mp3', 'assets/sfx/masti-dekho-bc-cid-dubbing.mp3',
+    'assets/sfx/chodu-cid-pakad-le.mp3', 'assets/sfx/cid-song.mp3',
+  ],
+  special: [
+    'assets/sfx/masti-dekho-bc-cid-dubbing.mp3', 'assets/sfx/cid.mp3', 'assets/sfx/cid-le-mdc.mp3',
+    'assets/sfx/chodu-cid-pakad-le.mp3', 'assets/sfx/cid-acp-mc.mp3', 'assets/sfx/cid-acp-pradhuman-fasi.mp3',
+  ],
+  ko: [
+    'assets/sfx/chodu-cid-pakad-le.mp3', 'assets/sfx/cid-le-mdc.mp3', 'assets/sfx/cid.mp3',
+    'assets/sfx/cid-acp-mc.mp3', 'assets/sfx/masti-dekho-bc-cid-dubbing.mp3',
+    'assets/sfx/cid-acp-pradhuman-fasi.mp3', 'assets/sfx/cid-song.mp3',
+  ],
+  clear: [
+    'assets/sfx/cid-song.mp3', 'assets/sfx/cid.mp3', 'assets/sfx/cid-acp-mc.mp3',
+    'assets/sfx/cid-bc.mp3', 'assets/sfx/ek-gand-pe-repta-mara-n-sarak-pe-hagta-firega.mp3',
+  ],
+  win: ['assets/sfx/cid-song.mp3'],
+  lose: [
+    'assets/sfx/cid.mp3', 'assets/sfx/cid-acp-mc.mp3', 'assets/sfx/cid-le-mdc.mp3',
+    'assets/sfx/masti-dekho-bc-cid-dubbing.mp3', 'assets/sfx/chodu-cid-pakad-le.mp3',
+  ],
+};
+
+function playCustomSfxPath(src) {
+  try {
+    const a = new Audio();
+    a.preload = 'auto';
+    a.volume = 0.7;
+    a.src = src;
+    const pr = a.play();
+    if (pr && pr.catch) pr.catch(() => {});
+  } catch (e) { /* ignore */ }
+}
+
+function sfxRandom(key) {
+  const pool = SFX_POOLS[key];
+  if (!pool || !pool.length) { sfx(key); return; }
+  playCustomSfxPath(pool[(Math.random() * pool.length) | 0]);
+}
+
+// ============================================================
 //  CUSTOM ASSETS
 // ============================================================
 const faceImages = {};

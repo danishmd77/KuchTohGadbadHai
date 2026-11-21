@@ -146,13 +146,13 @@ function togglePause() {
 
 function levelClear() {
   state = 'levelclear';
-  sfx('clear');
+  sfxRandom('clear');
   if (levelIndex < LEVELS.length - 1) {
     showOverlay('SCENE CLEAR!', level.name, [
       { label: 'Next scene', action: () => startLevel(levelIndex + 1) },
     ]);
   } else {
-    sfx('win');
+    sfxRandom('win');
     showOverlay('CASE SOLVED!', 'The city is safe... for now', [
       { label: 'Play again', action: () => startLevel(0) },
     ]);
@@ -271,7 +271,7 @@ function doPlayerHit() {
   if (hitAny) {
     hitstop = 0.055;
     shake = Math.max(shake, 6);
-    sfx('hit');
+    sfxRandom('hit');
     popText(
       player.x + player.w / 2 + player.facing * 40,
       player.y + 40,
@@ -315,7 +315,7 @@ function killEnemy(e) {
   score += e.score || 100;
   burst(e.x + e.w / 2, e.y + e.h * 0.5, '#ffe14f', 20, 320, 4);
   popText(e.x + e.w / 2, e.y, 'KO!', '#ff4fd8', 26);
-  sfx('ko');
+  sfxRandom('ko');
 
   if (e.type === 'boss') {
     bossRef = null;
@@ -335,7 +335,7 @@ function doSpecial() {
   shake = 18;
   flash = 0.25;
   banner('DARWAZA TOD DO!', 1.5, 'SPECIAL');
-  sfx('special');
+  sfxRandom('special');
 
   for (const e of enemies) {
     if (e.dead) continue;
@@ -364,7 +364,7 @@ function hurtPlayer(dmg, dir) {
   p.vy = -260;
   shake = Math.max(shake, 9);
   hitstop = 0.06;
-  sfx('hurt');
+  sfxRandom('hurt');
   popText(p.x + p.w / 2, p.y, '-' + dmg, '#ff4fd8', 20);
 
   if (p.hp <= 0) {
@@ -525,7 +525,7 @@ function updateGrunt(e, dt) {
   switch (e.state) {
     case 'walk':
       if (adist > 64) e.x += e.facing * e.speed * dt;
-      else { e.state = 'windup'; e.stateT = 0; }
+      else { e.state = 'windup'; e.stateT = 0; sfxRandom('chase'); }
       break;
     case 'windup':
       e.stateT += dt;
@@ -557,7 +557,7 @@ function updateCharger(e, dt) {
   switch (e.state) {
     case 'walk':
       if (adist > 220) e.x += e.facing * e.speed * dt;
-      else { e.state = 'tele'; e.stateT = 0; }
+      else { e.state = 'tele'; e.stateT = 0; sfxRandom('chase'); }
       break;
     case 'tele':
       e.stateT += dt;
@@ -621,7 +621,7 @@ function updateBoss(e, dt) {
         else if (r < 0.78) e.state = 'tele_charge';
         else e.state = 'tele_spread';
         e.stateT = 0;
-        sfx('boss');
+        sfxRandom('chase');
       }
       break;
     }
@@ -739,6 +739,7 @@ function activateArena(a) {
   spawnWave(a.waves[0]);
   banner(a.boss ? 'BOSS FIGHT!' : 'FIGHT!', 1.2, a.boss ? 'FINAL SHOWDOWN' : '');
   sfx(a.boss ? 'boss' : 'sting');
+  if (a.boss) sfxRandom('boss');
   player.x = clamp(player.x, cam.x + 30, cam.x + viewW - player.w - 30);
 }
 
@@ -756,6 +757,7 @@ function spawnWave(wave) {
       ? cam.x + 40 + Math.random() * 70
       : cam.x + viewW - 110 - Math.random() * 70;
     enemies.push(makeEnemy(spec.type, x, spec));
+    sfxRandom('spawn');
   }
 }
 
