@@ -270,6 +270,7 @@ function doPlayerHit() {
   if (hitAny) {
     hitstop = 0.055;
     shake = Math.max(shake, 6);
+    sfx('hit');
     popText(
       player.x + player.w / 2 + player.facing * 40,
       player.y + 40,
@@ -398,7 +399,6 @@ function updatePlayer(dt) {
 
   if (input.punchPressed) {
     input.punchPressed = false;
-    sfx(p.chain === 2 ? 'kick' : 'punch');
     if (p.state === 'attack') p.punchQueued = true;
     else if (p.state === 'idle') startPunch();
   }
