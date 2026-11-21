@@ -171,36 +171,7 @@ function sfx(name) {
 //  SOUND PLAYBACK: single shared bus, one sound at a time
 // All mp3 sounds queue on one bus so they never overlap.
 // ============================================================
-const SFX_POOLS = {
-  punch: [
-    'assets/sfx/hit/03_cid-120-watt.mp3', 'assets/sfx/hit/07_cid-ke-bakchodi.mp3',
-  ],
-  hit: [
-    'assets/sfx/hit/03_cid-120-watt.mp3', 'assets/sfx/hit/07_cid-ke-bakchodi.mp3',
-  ],
-  hurt: [
-    'assets/sfx/hurt/01_aree-cid.mp3', 'assets/sfx/hurt/04_cid-acp-mc.mp3',
-    'assets/sfx/hurt/12_cid-yeh-kya-back-rahe-ho-mcd.mp3',
-  ],
-  chase: [
-    'assets/sfx/chase/02_chodu-cid-pakad-le.mp3', 'assets/sfx/chase/09_cid.mp3',
-    'assets/sfx/chase/13_ek-baar-milja-beta.mp3',
-  ],
-  win: ['assets/sfx/win/10_cid-song.mp3'],
-  special: [
-    'assets/sfx/special/16_kya-cheda-bhosdi.mp3', 'assets/sfx/special/18_lund-pakad-ke-tarazu-ki-tarah-cid.mp3',
-    'assets/sfx/special/19_masti-dekho-bc-cid-dubbing.mp3',
-  ],
-  boss: [
-    'assets/sfx/boss/17_kyu-re-madarchod-cid.mp3', 'assets/sfx/boss/20_phir-teri-maiya-chodta-hu-cid.mp3',
-  ],
-  spawn: [
-    'assets/sfx/spawn/14_ek-gand-pe-repta-mara-n-sarak-pe-hagta-firega.mp3',
-  ],
-  kill: ['assets/sfx/kill/05_cid-acp-pradhuman-fasi.mp3'],
-  bossHit: ['assets/sfx/boss-hit/06_cid-gali-ovs.mp3'],
-  gotKilled: ['assets/sfx/got-killed/15_ek-jhaat-bhar-ka-aadmi.mp3'],
-};
+const SFX_POOLS = {};
 
 const SFX_INDEX = {};
 let sfxBus = null;
